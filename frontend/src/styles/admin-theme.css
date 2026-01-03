@@ -1,0 +1,104 @@
+/* Admin Theme Styles */
+
+/* Light Theme - Canva Style */
+.admin-light {
+  --admin-bg: #ffffff;
+  --admin-sidebar-bg: #ffffff;
+  --admin-card-bg: #ffffff;
+  --admin-text: #1e293b;
+  --admin-text-muted: #64748b;
+  --admin-border: #e2e8f0;
+  --admin-hover: #f1f5f9;
+  --admin-active-bg: #dbeafe;
+  --admin-active-text: #1d4ed8;
+}
+
+/* Dark Theme - Modern Dashboard */
+.admin-dark {
+  --admin-bg: #0f172a;
+  --admin-sidebar-bg: #1e293b;
+  --admin-card-bg: #334155;
+  --admin-text: #f8fafc;
+  --admin-text-muted: #94a3b8;
+  --admin-border: #475569;
+  --admin-hover: #475569;
+  --admin-active-bg: #1e40af;
+  --admin-active-text: #dbeafe;
+}
+
+/* Base Classes */
+.admin-bg {
+  background-color: var(--admin-bg);
+}
+
+.admin-sidebar {
+  background-color: var(--admin-sidebar-bg);
+  border-right: 1px solid var(--admin-border);
+}
+
+.admin-card {
+  background-color: var(--admin-card-bg);
+  border: 1px solid var(--admin-border);
+}
+
+.admin-text {
+  color: var(--admin-text);
+}
+
+.admin-text-muted {
+  color: var(--admin-text-muted);
+}
+
+.admin-border-b {
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.admin-border-t {
+  border-top: 1px solid var(--admin-border);
+}
+
+.admin-hover:hover {
+  background-color: var(--admin-hover);
+}
+
+.admin-active {
+  background-color: var(--admin-active-bg);
+  color: var(--admin-active-text);
+}
+
+/* Table Styles */
+.admin-table {
+  background-color: var(--admin-card-bg);
+  border: 1px solid var(--admin-border);
+}
+
+.admin-table th {
+  background-color: var(--admin-hover);
+  color: var(--admin-text-muted);
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.admin-table td {
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.admin-table tr:hover {
+  background-color: var(--admin-hover);
+}
+
+/* Input Styles */
+.admin-input {
+  background-color: var(--admin-card-bg);
+  border: 1px solid var(--admin-border);
+  color: var(--admin-text);
+}
+
+.admin-input:focus {
+  border-color: var(--admin-active-text);
+  outline: none;
+  box-shadow: 0 0 0 1px var(--admin-active-text);
+}
+
+.admin-input::placeholder {
+  color: var(--admin-text-muted);
+}

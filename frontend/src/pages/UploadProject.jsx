@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import { Upload, Link2, Image, Sparkles, X } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import API from '../api/api';
 
 const UploadProject = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -14,7 +17,10 @@ const UploadProject = () => {
   });
   
   const [currentTag, setCurrentTag] = useState('');
-  const [thumbnail, setThumbnail] = useState(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState(null);
+  const [thumbnailFile, setThumbnailFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const categories = [
     'AI Tools', 'Productivity', 'Content Creation', 'Data Analysis', 
@@ -42,18 +48,62 @@ const UploadProject = () => {
 
   const handleThumbnailChange = (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setThumbnail(reader.result);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image must be less than 5MB');
+      return;
     }
+
+    setThumbnailFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setThumbnailPreview(reader.result);
+    };
+    reader.readAsDataURL(file);
   };
 
-  const handleSubmit = () => {
-    console.log('Project submitted:', formData);
-    navigate('/developer/dashboard');
+  const handleSubmit = async (statusValue = 'active') => {
+    if (loading) return;
+    setError('');
+    setLoading(true);
+
+    try {
+      if (!user) {
+        setError('You must be logged in to publish');
+        setLoading(false);
+        return;
+      }
+
+      if (!formData.title.trim() || !formData.description.trim() || !formData.url.trim() || !formData.category) {
+        setError('Please fill all required fields');
+        setLoading(false);
+        return;
+      }
+
+      const payload = new FormData();
+      payload.append('title', formData.title.trim());
+      payload.append('description', formData.description.trim());
+      payload.append('projectUrl', formData.url.trim());
+      payload.append('category', formData.category);
+      payload.append('tags', formData.tags.join(','));
+      payload.append('status', statusValue);
+
+      if (thumbnailFile) {
+        payload.append('thumbnail', thumbnailFile);
+      }
+
+      await API.post('/projects', payload, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      navigate('/developer/dashboard');
+    } catch (err) {
+      console.error('Publish error:', err);
+      setError(err?.response?.data?.error || err?.response?.data?.details || 'Failed to publish project');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -74,6 +124,11 @@ const UploadProject = () => {
         </div>
 
         <div className="space-y-6">
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/40 text-red-200 px-4 py-3 rounded-xl">
+              {error}
+            </div>
+          )}
           <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-gray-800 dark:border-slate-800 shadow-sm dark:shadow-md dark:shadow-black/10">
             <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Project Title *</label>
             <input
@@ -134,12 +189,15 @@ const UploadProject = () => {
                   </div>
                 </label>
               </div>
-              {thumbnail && (
+              {thumbnailPreview && (
                 <div className="w-full md:w-64 relative">
-                  <img src={thumbnail} alt="Preview" className="w-full h-40 object-cover rounded-xl border border-gray-300 dark:border-slate-700 shadow-lg" />
+                  <img src={thumbnailPreview} alt="Preview" className="w-full h-40 object-cover rounded-xl border border-gray-300 dark:border-slate-700 shadow-lg" />
                   <button
                     type="button"
-                    onClick={() => setThumbnail(null)}
+                    onClick={() => {
+                      setThumbnailPreview(null);
+                      setThumbnailFile(null);
+                    }}
                     className="absolute top-2 right-2 bg-slate-900/80 hover:bg-red-500 w-7 h-7 rounded-full flex items-center justify-center transition backdrop-blur-sm"
                   >
                     <X className="w-4 h-4 text-white" />
@@ -225,17 +283,20 @@ const UploadProject = () => {
           <div className="flex gap-4 pt-4">
             <button
               type="button"
-              className="flex-1 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 py-4 rounded-xl font-semibold transition border border-gray-300 dark:border-slate-700 hover:border-gray-400 dark:hover:border-slate-600"
+              disabled={loading}
+              onClick={() => handleSubmit('draft')}
+              className="flex-1 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 py-4 rounded-xl font-semibold transition border border-gray-300 dark:border-slate-700 hover:border-gray-400 dark:hover:border-slate-600 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Save as Draft
+              {loading ? 'Saving...' : 'Save as Draft'}
             </button>
             <button
               type="button"
-              onClick={handleSubmit}
-              className="flex-1 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white py-4 rounded-xl font-semibold shadow-lg shadow-indigo-500/25 transition flex items-center justify-center gap-2 transform hover:scale-[1.02] active:scale-[0.98]"
+              disabled={loading}
+              onClick={() => handleSubmit('active')}
+              className="flex-1 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white py-4 rounded-xl font-semibold shadow-lg shadow-indigo-500/25 transition flex items-center justify-center gap-2 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Upload className="w-5 h-5" />
-              Publish Project
+              {loading ? 'Publishing...' : 'Publish Project'}
             </button>
           </div>
         </div>

@@ -1,8 +1,11 @@
 import express from 'express';
+import multer from 'multer';
 import { authMiddleware } from '../middleware/auth.js';
 import { ProjectModel } from '../models/Project.js';
+import { uploadProjectImage } from '../config/supabase.js';
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Get all projects
 router.get('/', async (req, res) => {
@@ -42,14 +45,53 @@ router.get('/user/my-projects', authMiddleware, async (req, res) => {
   }
 });
 
-// Create project
-router.post('/', authMiddleware, async (req, res) => {
+// Create project with image upload
+router.post('/', authMiddleware, upload.single('thumbnail'), async (req, res) => {
   try {
-    const project = await ProjectModel.create(req.user.userId, req.body);
-    res.status(201).json(project);
+    const { title, description, category, tags, projectUrl, status } = req.body;
+    
+    if (!title || !description) {
+      return res.status(400).json({ error: 'Title and description are required' });
+    }
+
+    let imageUrl = null;
+    
+    // Upload image if provided
+    if (req.file) {
+      try {
+        imageUrl = await uploadProjectImage(req.file, `${req.user.userId}-${Date.now()}`);
+      } catch (uploadError) {
+        console.error('Image upload failed:', uploadError);
+        return res.status(500).json({ error: 'Failed to upload image' });
+      }
+    }
+
+    // Parse tags if it's a string
+    const parsedTags = typeof tags === 'string' ? tags.split(',').map(t => t.trim()).filter(Boolean) : tags;
+
+    const projectData = {
+      title,
+      description,
+      shortDescription: description.substring(0, 200),
+      technologies: parsedTags || [],
+      imageUrl,
+      repositoryUrl: null,
+      liveUrl: projectUrl || null,
+      difficultyLevel: category || 'AI Tools',
+      budget: null,
+      category,
+      tags: parsedTags
+    };
+
+    const project = await ProjectModel.create(req.user.userId, projectData);
+    
+    res.status(201).json({
+      message: 'Project created successfully',
+      project
+    });
   } catch (error) {
     console.error('Create project error:', error);
-    res.status(500).json({ error: 'Failed to create project' });
+    res.status(500).json({ error: 'Failed to create project', details: error.message });
   }
 });
 

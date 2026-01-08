@@ -1,27 +1,30 @@
+-- Fresh schema for BytexAI backend (PostgreSQL)
+
+-- Drop existing objects in dependency order
 DROP TABLE IF EXISTS bookmarks CASCADE;
 DROP TABLE IF EXISTS reviews CASCADE;
 DROP TABLE IF EXISTS projects CASCADE;
 DROP TABLE IF EXISTS project_skills CASCADE;
 DROP TABLE IF EXISTS developers CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS admin_logs CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS blog_posts CASCADE;
 DROP TABLE IF EXISTS content CASCADE;
 DROP TABLE IF EXISTS reports CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
 
+-- Enums
 CREATE TYPE user_role AS ENUM ('user', 'developer', 'admin');
 CREATE TYPE project_status AS ENUM ('draft', 'active', 'completed', 'archived');
 CREATE TYPE review_status AS ENUM ('pending', 'approved', 'rejected');
 CREATE TYPE notification_type AS ENUM ('project_update', 'review_received', 'bookmark_update', 'system_notification');
 
+-- Users
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
-    username VARCHAR(255) UNIQUE NOT NULL,
+    full_name VARCHAR(255) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    first_name VARCHAR(100),
-    last_name VARCHAR(100),
     profile_image_url VARCHAR(500),
     bio TEXT,
     phone_number VARCHAR(20),
@@ -37,6 +40,7 @@ CREATE TABLE users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Developers (one-to-one with users)
 CREATE TABLE developers (
     id SERIAL PRIMARY KEY,
     user_id INTEGER UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -55,6 +59,7 @@ CREATE TABLE developers (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Projects
 CREATE TABLE projects (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -77,6 +82,7 @@ CREATE TABLE projects (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Project skills
 CREATE TABLE project_skills (
     id SERIAL PRIMARY KEY,
     project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -85,6 +91,7 @@ CREATE TABLE project_skills (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Reviews
 CREATE TABLE reviews (
     id SERIAL PRIMARY KEY,
     project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -101,6 +108,7 @@ CREATE TABLE reviews (
     UNIQUE(project_id, reviewer_id)
 );
 
+-- Bookmarks
 CREATE TABLE bookmarks (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -110,6 +118,7 @@ CREATE TABLE bookmarks (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Blog posts
 CREATE TABLE blog_posts (
     id SERIAL PRIMARY KEY,
     author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -126,6 +135,7 @@ CREATE TABLE blog_posts (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- CMS-like content
 CREATE TABLE content (
     id SERIAL PRIMARY KEY,
     page_name VARCHAR(255) NOT NULL,
@@ -137,6 +147,7 @@ CREATE TABLE content (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Notifications
 CREATE TABLE notifications (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -148,6 +159,7 @@ CREATE TABLE notifications (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Reports
 CREATE TABLE reports (
     id SERIAL PRIMARY KEY,
     reporter_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -162,6 +174,7 @@ CREATE TABLE reports (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Admin logs
 CREATE TABLE admin_logs (
     id SERIAL PRIMARY KEY,
     admin_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -173,8 +186,8 @@ CREATE TABLE admin_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Indexes
 CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_developers_user_id ON developers(user_id);
 CREATE INDEX idx_developers_rating ON developers(rating);
@@ -198,12 +211,13 @@ CREATE INDEX idx_notifications_read ON notifications(is_read);
 CREATE INDEX idx_reports_status ON reports(status);
 CREATE INDEX idx_admin_logs_admin_id ON admin_logs(admin_id);
 
+-- Views
 CREATE VIEW active_projects AS
-SELECT * FROM projects 
+SELECT * FROM projects
 WHERE status = 'active' AND created_at > NOW() - INTERVAL '6 months';
 
 CREATE VIEW top_rated_developers AS
-SELECT d.*, u.username, u.email 
+SELECT d.*, u.full_name AS user_full_name, u.email
 FROM developers d
 JOIN users u ON d.user_id = u.id
 WHERE d.is_available = TRUE
@@ -215,6 +229,7 @@ SELECT * FROM projects
 WHERE featured = TRUE AND status = 'active'
 ORDER BY created_at DESC;
 
+-- Updated-at trigger helper
 CREATE OR REPLACE FUNCTION update_timestamp()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -223,6 +238,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Triggers
 CREATE TRIGGER users_timestamp BEFORE UPDATE ON users
 FOR EACH ROW EXECUTE FUNCTION update_timestamp();
 

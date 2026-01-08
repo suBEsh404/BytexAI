@@ -10,33 +10,45 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    const storedUser = localStorage.getItem('user')
-    if (token && storedUser) {
+    const bootstrap = async () => {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        setLoading(false)
+        return
+      }
       try {
-        const user = JSON.parse(storedUser)
+        const user = await authService.getMe()
         setUser(user)
-      } catch (error) {
-        console.error('Error parsing stored user:', error)
+        localStorage.setItem('user', JSON.stringify(user))
+      } catch (err) {
         localStorage.removeItem('token')
         localStorage.removeItem('user')
+        setUser(null)
+      } finally {
+        setLoading(false)
       }
     }
-    setLoading(false)
+    bootstrap()
   }, [])
 
-  const login = async (email, password) => {
-    const data = await authService.login(email, password)
+  const login = async (email, password, rememberMe) => {
+    const data = await authService.login(email, password, rememberMe)
     localStorage.setItem('token', data.token)
-    setUser(data.user)
-    return data
+    // Refresh from backend to ensure latest fields (e.g., created_at)
+    const freshUser = await authService.getMe().catch(() => data.user)
+    localStorage.setItem('user', JSON.stringify(freshUser))
+    setUser(freshUser)
+    return { token: data.token, user: freshUser }
   }
 
   const signup = async (name, email, password, role) => {
     const data = await authService.signup(name, email, password, role)
     localStorage.setItem('token', data.token)
-    setUser(data.user)
-    return data
+    // Refresh from backend to ensure latest fields (e.g., created_at)
+    const freshUser = await authService.getMe().catch(() => data.user)
+    localStorage.setItem('user', JSON.stringify(freshUser))
+    setUser(freshUser)
+    return { token: data.token, user: freshUser }
   }
 
   const logout = () => {

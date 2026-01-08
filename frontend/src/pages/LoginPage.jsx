@@ -5,29 +5,38 @@ import Navbar from '../components/Navbar'
 import { useAuth } from '../context/AuthContext'
 
 function LoginPage() {
-  const [formData, setFormData] = useState({ email: '', password: '' })
+  const [formData, setFormData] = useState({ email: '', password: '', rememberMe: false })
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const { login } = useAuth()
   const navigate = useNavigate()
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
-    setErrors({ ...errors, [e.target.name]: '' })
+    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value
+    setFormData({ ...formData, [e.target.name]: value })
+    setErrors({ ...errors, [e.target.name]: '', submit: '' })
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     try {
-      const data = await login(formData.email, formData.password)
+      const data = await login(formData.email, formData.password, formData.rememberMe)
       if (data.user.role === 'developer') {
         navigate('/developer/dashboard')
       } else {
         navigate('/')
       }
     } catch (error) {
-      setErrors({ submit: error.response?.data?.message || 'Login failed' })
+      const code = error.response?.data?.code
+      const message = error.response?.data?.error || error.response?.data?.message || 'Login failed'
+      if (code === 'EMAIL_NOT_FOUND') {
+        setErrors({ email: message, password: '', submit: '' })
+      } else if (code === 'PASSWORD_INCORRECT') {
+        setErrors({ email: '', password: message, submit: '' })
+      } else {
+        setErrors({ email: '', password: '', submit: message })
+      }
     } finally {
       setLoading(false)
     }
@@ -94,6 +103,9 @@ function LoginPage() {
                   placeholder="you@example.com"
                   required
                 />
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-500 dark:text-red-400">{errors.email}</p>
+                )}
               </div>
 
               <div>
@@ -109,11 +121,20 @@ function LoginPage() {
                   placeholder="••••••••"
                   required
                 />
+                {errors.password && (
+                  <p className="mt-1 text-sm text-red-500 dark:text-red-400">{errors.password}</p>
+                )}
               </div>
 
               <div className="flex items-center justify-between">
                 <label className="flex items-center">
-                  <input type="checkbox" className="w-4 h-4 rounded border-gray-300 dark:border-slate-600 text-primary focus:ring-primary" />
+                  <input
+                    type="checkbox"
+                    name="rememberMe"
+                    checked={formData.rememberMe}
+                    onChange={handleChange}
+                    className="w-4 h-4 rounded border-gray-300 dark:border-slate-600 text-primary focus:ring-primary"
+                  />
                   <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Remember me</span>
                 </label>
                 <Link to="/forgot-password" className="text-sm text-accent hover:text-primary transition">

@@ -23,7 +23,7 @@ function SignupPage() {
       await signup(formData.name, formData.email, formData.password, formData.role)
       navigate('/')
     } catch (error) {
-      setErrors({ submit: error.response?.data?.message || 'Signup failed' })
+      setErrors({ submit: error.response?.data?.error || error.response?.data?.message || 'Signup failed' })
     } finally {
       setLoading(false)
     }

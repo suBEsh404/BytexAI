@@ -1,50 +1,54 @@
-// Mock auth service - no backend needed
+import API from "../api/api"
+
+// Real auth service wired to backend API
 export const authService = {
   signup: async (name, email, password, role) => {
-    await new Promise(resolve => setTimeout(resolve, 500))
-    const user = { id: Date.now(), name, email, role, created_at: new Date() }
-    const token = 'mock_token_' + Date.now()
-    localStorage.setItem('user', JSON.stringify(user))
-    return { token, user }
+    const res = await API.post("/auth/signup", {
+      fullName: name,
+      email,
+      password,
+      role
+    })
+    const { token, user } = res.data
+    const normalizedUser = { ...user, name: user.fullName || user.full_name || user.name }
+    localStorage.setItem("user", JSON.stringify(normalizedUser))
+    return { token, user: normalizedUser }
   },
 
-  login: async (email, password) => {
-    await new Promise(resolve => setTimeout(resolve, 500))
-    // For now, allow any email for admin login; later restrict to specific admin emails
-    const user = {
-      id: 1,
-      name: 'Admin User',
-      email,
-      role: 'admin',
-      created_at: new Date()
-    }
-    const token = 'mock_token_' + Date.now()
-    localStorage.setItem('user', JSON.stringify(user))
-    return { token, user }
+  login: async (email, password, rememberMe) => {
+    const res = await API.post("/auth/login", { email, password, rememberMe })
+    const { token, user } = res.data
+    const normalizedUser = { ...user, name: user.fullName || user.full_name || user.name }
+    localStorage.setItem("user", JSON.stringify(normalizedUser))
+    return { token, user: normalizedUser }
   },
 
   getMe: async () => {
-    await new Promise(resolve => setTimeout(resolve, 300))
-    const user = JSON.parse(localStorage.getItem('user') || '{}')
-    if (!user.id) throw new Error('Not authenticated')
-    return user
+    const token = localStorage.getItem("token")
+    if (!token) throw new Error("Not authenticated")
+    const res = await API.get("/auth/me", {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const user = res.data?.user || res.data
+    const normalizedUser = { ...user, name: user.fullName || user.full_name || user.name }
+    return normalizedUser
   },
 
   forgotPassword: async (email) => {
-    await new Promise(resolve => setTimeout(resolve, 500))
-    return { message: 'Password reset email sent' }
+    // Placeholder: wire to backend endpoint when available
+    return { message: "Password reset email sent" }
   },
 
   resetPassword: async (token, newPassword) => {
-    await new Promise(resolve => setTimeout(resolve, 500))
-    return { message: 'Password reset successful' }
+    // Placeholder: wire to backend endpoint when available
+    return { message: "Password reset successful" }
   },
 
   updateProfile: async (name, currentPassword, newPassword) => {
-    await new Promise(resolve => setTimeout(resolve, 500))
-    const user = JSON.parse(localStorage.getItem('user') || '{}')
+    // Placeholder: wire to backend endpoint when available
+    const user = JSON.parse(localStorage.getItem("user") || "{}")
     user.name = name
-    localStorage.setItem('user', JSON.stringify(user))
+    localStorage.setItem("user", JSON.stringify(user))
     return user
   }
 }

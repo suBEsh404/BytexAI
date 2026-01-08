@@ -1,10 +1,11 @@
 import jwt from 'jsonwebtoken';
 
-export const generateToken = (userId, email) => {
+export const generateToken = (userId, email, expiresIn) => {
+  const ttl = expiresIn || process.env.JWT_EXPIRE || '7d';
   return jwt.sign(
     { userId, email },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRE || '7d' }
+    { expiresIn: ttl }
   );
 };
 

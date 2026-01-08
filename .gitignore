@@ -1,0 +1,5 @@
+**/.env
+backend/node_modules
+backend/API_DOCUMENTATION.md
+backend/QUICK_START.md
+backend/README.md

@@ -1,150 +1,137 @@
-const mockProjects = [
-  {
-    id: 1,
-    title: 'AI Content Generator',
-    short_description: 'Generate high-quality content with AI',
-    full_description: 'AI-powered content generation tool that helps you create blog posts, articles, and marketing copy in seconds.\n\n- Generate SEO-optimized content\n- Multiple writing styles\n- Plagiarism-free output\n- Export to multiple formats',
-    logo_url: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=200',
-    image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800',
-    project_url: 'https://example.com/ai-content',
-    category: 'AI Tools',
-    tech_stack: 'React, Python, GPT-4',
-    created_by: 1,
-    created_by_name: 'John Doe',
-    average_rating: 4.8,
-    created_at: '2024-01-15',
-    status: 'Published'
-  },
-  {
-    id: 2,
-    title: 'Image Enhancer Pro',
-    short_description: 'Enhance images using ML',
-    full_description: 'Professional image enhancement tool powered by machine learning.\n\n- Upscale images up to 4x\n- Remove noise and artifacts\n- Batch processing\n- API access available',
-    logo_url: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=200',
-    image: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=800',
-    project_url: 'https://example.com/image-enhancer',
-    category: 'Image Processing',
-    tech_stack: 'Python, TensorFlow, React',
-    created_by: 2,
-    created_by_name: 'Jane Smith',
-    average_rating: 4.6,
-    created_at: '2024-01-10',
-    status: 'Published'
-  },
-  {
-    id: 3,
-    title: 'Voice Assistant AI',
-    short_description: 'Natural language voice commands',
-    full_description: 'Advanced voice assistant with natural language processing.\n\n- Multi-language support\n- Custom wake words\n- Smart home integration\n- Offline mode available',
-    logo_url: 'https://images.unsplash.com/photo-1589254065878-42c9da997008?w=200',
-    image: 'https://images.unsplash.com/photo-1589254065878-42c9da997008?w=800',
-    project_url: 'https://example.com/voice-assistant',
-    category: 'NLP',
-    tech_stack: 'Python, PyTorch, Node.js',
-    created_by: 3,
-    created_by_name: 'Mike Chen',
-    average_rating: 4.7,
-    created_at: '2024-01-12',
-    status: 'Published'
-  },
-  {
-    id: 4,
-    title: 'Code Optimizer AI',
-    short_description: 'AI-powered code optimization',
-    full_description: 'Automatically optimize and refactor your code.\n\n- Supports JS, Python, Rust\n- Performance improvements\n- Code quality analysis\n- Real-time suggestions',
-    logo_url: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=200',
-    image: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800',
-    project_url: 'https://example.com/code-optimizer',
-    category: 'Developer Tools',
-    tech_stack: 'TypeScript, Python, GPT-4',
-    created_by: 4,
-    created_by_name: 'Sarah Lee',
-    average_rating: 4.5,
-    created_at: '2024-01-08',
-    status: 'Published'
-  },
-  {
-    id: 5,
-    title: 'Data Visualizer Pro',
-    short_description: 'Create stunning data visualizations',
-    full_description: 'Transform your data into beautiful, interactive visualizations.\n\n- 50+ chart types\n- Real-time updates\n- Export to PNG, SVG\n- Collaborative editing',
-    logo_url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=200',
-    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800',
-    project_url: 'https://example.com/data-viz',
-    category: 'Data Analysis',
-    tech_stack: 'React, D3.js, Python',
-    created_by: 5,
-    created_by_name: 'Alex Kumar',
-    average_rating: 4.9,
-    created_at: '2024-01-05',
-    status: 'Published'
-  },
-  {
-    id: 6,
-    title: 'Smart Scheduler AI',
-    short_description: 'AI-powered scheduling assistant',
-    full_description: 'Intelligent scheduling and calendar management.\n\n- Auto-schedule meetings\n- Time zone handling\n- Calendar integration\n- Smart reminders',
-    logo_url: 'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=200',
-    image: 'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=800',
-    project_url: 'https://example.com/scheduler',
-    category: 'Productivity',
-    tech_stack: 'React, Node.js, MongoDB',
-    created_by: 6,
-    created_by_name: 'Emma Davis',
-    average_rating: 4.4,
-    created_at: '2024-01-03',
-    status: 'Published'
+import api from '../api/api';
+
+// Get all projects
+export const getAllProjects = async (limit = 10, offset = 0) => {
+  try {
+    const response = await api.get(`/projects?limit=${limit}&offset=${offset}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching projects:', error);
+    throw error;
   }
-]
+};
 
-const mockReviews = [
-  {
-    id: 1,
-    project_id: 1,
-    user_id: 3,
-    user_name: 'Alice Johnson',
-    user_role: 'user',
-    rating: 5,
-    comment: 'Amazing tool! Saved me hours of work.',
-    created_at: '2024-01-20'
-  },
-  {
-    id: 2,
-    project_id: 1,
-    user_id: 4,
-    user_name: 'Bob Wilson',
-    user_role: 'developer',
-    rating: 4,
-    comment: 'Great project, could use more customization options.',
-    created_at: '2024-01-18'
+// Get developer's own projects
+export const getDeveloperProjects = async () => {
+  try {
+    const response = await api.get('/projects/developer/my-projects');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching developer projects:', error);
+    throw error;
   }
-]
+};
 
-export const getAllProjects = async () => {
-  await new Promise(resolve => setTimeout(resolve, 300))
-  return mockProjects
-}
+// Get project by ID
+export const getProjectById = async (id) => {
+  try {
+    const response = await api.get(`/projects/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching project:', error);
+    throw error;
+  }
+};
 
-export const getProject = async (id) => {
-  await new Promise(resolve => setTimeout(resolve, 300))
-  const project = mockProjects.find(p => p.id === parseInt(id))
-  if (!project) throw new Error('Project not found')
-  return project
-}
+// Create new project
+export const createProject = async (projectData) => {
+  try {
+    const formData = new FormData();
+    
+    // Append text fields
+    formData.append('title', projectData.title);
+    formData.append('description', projectData.description);
+    formData.append('category', projectData.category);
+    formData.append('tags', projectData.tags);
+    formData.append('projectUrl', projectData.projectUrl || '');
+    formData.append('status', projectData.status || 'draft');
+    
+    // Append file if exists
+    if (projectData.thumbnail) {
+      formData.append('thumbnail', projectData.thumbnail);
+    }
+    
+    const response = await api.post('/projects', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating project:', error);
+    throw error;
+  }
+};
 
-export const getProjectReviews = async (id) => {
-  await new Promise(resolve => setTimeout(resolve, 200))
-  return mockReviews.filter(r => r.project_id === parseInt(id))
-}
+// Update project
+export const updateProject = async (id, projectData) => {
+  try {
+    const response = await api.put(`/projects/${id}`, projectData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating project:', error);
+    throw error;
+  }
+};
 
-export const toggleBookmark = async (id) => {
-  await new Promise(resolve => setTimeout(resolve, 200))
-  return { ok: true }
-}
+// Delete project
+export const deleteProject = async (id) => {
+  try {
+    const response = await api.delete(`/projects/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting project:', error);
+    throw error;
+  }
+};
 
+// Get project reviews
+export const getProjectReviews = async (projectId) => {
+  try {
+    const response = await api.get(`/reviews/project/${projectId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching project reviews:', error);
+    throw error;
+  }
+};
+
+// Add project review
+export const addProjectReview = async (projectId, reviewData) => {
+  try {
+    const response = await api.post(`/reviews/project/${projectId}`, reviewData);
+    return response.data;
+  } catch (error) {
+    console.error('Error adding review:', error);
+    throw error;
+  }
+};
+
+// Backward compatibility aliases
+export const getProject = getProjectById;
+
+// Toggle bookmark (placeholder - implement based on your bookmark API)
+export const toggleBookmark = async (projectId) => {
+  try {
+    const response = await api.post(`/bookmarks/toggle`, { projectId });
+    return response.data;
+  } catch (error) {
+    console.error('Error toggling bookmark:', error);
+    throw error;
+  }
+};
+
+// Export all functions as a namespace for backward compatibility
 export const projectService = {
   getAllProjects,
-  getProject,
+  getProjectById,
+  getProject: getProjectById,
+  getDeveloperProjects,
+  createProject,
+  updateProject,
+  deleteProject,
   getProjectReviews,
+  addProjectReview,
   toggleBookmark
-}
+};
+

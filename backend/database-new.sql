@@ -71,6 +71,7 @@ CREATE TABLE projects (
     developer_id INTEGER NOT NULL REFERENCES developers(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
     description TEXT,
+    short_description VARCHAR(300),
     category VARCHAR(100),
     tags VARCHAR(100)[],
     status project_status DEFAULT 'draft',
@@ -81,6 +82,7 @@ CREATE TABLE projects (
     featured BOOLEAN DEFAULT FALSE,
     view_count INTEGER DEFAULT 0,
     rating DECIMAL(3, 2) DEFAULT 0,
+    review_count INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

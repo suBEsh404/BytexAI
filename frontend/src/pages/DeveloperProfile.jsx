@@ -1,99 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapPin, Calendar, Globe, Github, Twitter, Linkedin, Star, Eye, Award, TrendingUp, Edit } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import { getDeveloperProjects } from '../services/projectService';
+import { useAuth } from '../context/AuthContext';
 
 const DeveloperProfile = () => {
   const [activeTab, setActiveTab] = useState('projects');
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
-  const profile = {
-    name: 'Alex Thompson',
-    username: '@alexdev',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop',
-    bio: 'Full-stack developer and AI enthusiast. Building tools that make developers\' lives easier. Open source contributor and tech educator.',
-    location: 'San Francisco, CA',
-    joinedDate: 'January 2023',
-    stats: {
-      projects: 24,
-      totalViews: 45600,
-      avgRating: 4.7,
-      followers: 1234
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+      const data = await getDeveloperProjects();
+      setProjects(data.filter(p => p.status === 'published')); // Only show published projects
+    } catch (err) {
+      console.error('Failed to fetch projects:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const projects = [
-    {
-      id: 1,
-      title: 'AI Content Generator',
-      description: 'Generate high-quality content with AI-powered algorithms',
-      thumbnail: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&h=250&fit=crop',
-      category: 'AI Tools',
-      rating: 4.8,
-      reviews: 234,
-      views: 12400,
-      tags: ['AI', 'Generator'],
-      featured: true
-    },
-    {
-      id: 2,
-      title: 'Code Optimizer AI',
-      description: 'Optimize and refactor your code automatically',
-      thumbnail: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&h=250&fit=crop',
-      category: 'Productivity',
-      rating: 4.7,
-      reviews: 156,
-      views: 7200,
-      tags: ['AI', 'Code'],
-      featured: false
-    },
-    {
-      id: 3,
-      title: 'Data Visualizer Pro',
-      description: 'Create stunning data visualizations in seconds',
-      thumbnail: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=250&fit=crop',
-      category: 'Data Analysis',
-      rating: 4.9,
-      reviews: 412,
-      views: 15600,
-      tags: ['Analytics', 'Data'],
-      featured: true
-    },
-    {
-      id: 4,
-      title: 'Image Enhancer',
-      description: 'Enhance and upscale images using ML',
-      thumbnail: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=400&h=250&fit=crop',
-      category: 'Image Processing',
-      rating: 4.6,
-      reviews: 189,
-      views: 8900,
-      tags: ['AI', 'Image'],
-      featured: false
-    },
-    {
-      id: 5,
-      title: 'Smart Scheduler',
-      description: 'AI-powered scheduling and calendar management',
-      thumbnail: 'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=400&h=250&fit=crop',
-      category: 'Productivity',
-      rating: 4.5,
-      reviews: 98,
-      views: 5400,
-      tags: ['AI', 'Productivity'],
-      featured: false
-    },
-    {
-      id: 6,
-      title: 'Voice Synthesizer',
-      description: 'Convert text to natural-sounding speech',
-      thumbnail: 'https://images.unsplash.com/photo-1589254065878-42c9da997008?w=400&h=250&fit=crop',
-      category: 'AI Tools',
-      rating: 4.8,
-      reviews: 267,
-      views: 11200,
-      tags: ['AI', 'Audio'],
-      featured: true
+  const profile = {
+    name: user?.full_name || 'Developer',
+    username: `@${user?.email?.split('@')[0] || 'developer'}`,
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop',
+    bio: 'Full-stack developer and AI enthusiast. Building tools that make developers\' lives easier. Open source contributor and tech educator.',
+    location: 'San Francisco, CA',
+    joinedDate: new Date(user?.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) || 'January 2023',
+    stats: {
+      projects: projects.length,
+      totalViews: projects.reduce((sum, p) => sum + (p.view_count || 0), 0),
+      avgRating: projects.length > 0 
+        ? (projects.reduce((sum, p) => sum + (parseFloat(p.rating) || 0), 0) / projects.length).toFixed(1)
+        : 0,
+      followers: 1234
     }
-  ];
+  };
 
   const achievements = [
     { icon: Award, title: 'Top Developer', description: 'Ranked in top 5% of developers' },
@@ -223,51 +171,73 @@ const DeveloperProfile = () => {
         </div>
 
         <div className="bg-slate-900 rounded-b-2xl border-b border-x border-slate-800 p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects
-              .filter(p => activeTab === 'projects' || p.featured)
-              .map(project => (
-              <div key={project.id} className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden hover:border-indigo-500/50 transition group cursor-pointer hover:shadow-xl hover:shadow-black/20">
-                <div className="relative h-40 overflow-hidden">
-                  <img 
-                    src={project.thumbnail} 
-                    alt={project.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition duration-500"
-                  />
-                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition"></div>
-                  {project.featured && (
-                    <div className="absolute top-2 right-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-2 py-1 rounded-lg text-xs font-semibold shadow-lg">
-                      Featured
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-4">
-                  <h3 className="text-base font-bold text-slate-100 mb-1 group-hover:text-indigo-400 transition">{project.title}</h3>
-                  <p className="text-slate-400 text-sm mb-3 line-clamp-2">{project.description}</p>
-
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {project.tags.map(tag => (
-                      <span key={tag} className="bg-sky-500/10 text-sky-400 border border-sky-500/20 px-2 py-0.5 rounded text-xs">
-                        {tag}
-                      </span>
-                    ))}
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
+            </div>
+          ) : projects.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-slate-400">No projects published yet</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {projects
+                .filter(p => activeTab === 'projects' || p.featured)
+                .map(project => (
+                <div key={project.id} className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden hover:border-indigo-500/50 transition group cursor-pointer hover:shadow-xl hover:shadow-black/20">
+                  <div className="relative h-40 overflow-hidden">
+                    {project.image_url ? (
+                      <img 
+                        src={project.image_url} 
+                        alt={project.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-slate-700 flex items-center justify-center">
+                        <span className="text-slate-500">No image</span>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition"></div>
+                    {project.featured && (
+                      <div className="absolute top-2 right-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-2 py-1 rounded-lg text-xs font-semibold shadow-lg">
+                        Featured
+                      </div>
+                    )}
                   </div>
 
-                  <div className="flex items-center gap-4 pt-3 border-t border-slate-700">
-                    <div className="flex items-center gap-1">
-                      <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
-                      <span className="text-sm text-slate-300">{project.rating}</span>
+                  <div className="p-4">
+                    <h3 className="text-base font-bold text-slate-100 mb-1 group-hover:text-indigo-400 transition">{project.title}</h3>
+                    <p className="text-slate-400 text-sm mb-3 line-clamp-2">
+                      {project.short_description || project.description?.substring(0, 100)}
+                    </p>
+
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {(project.tags || []).slice(0, 3).map((tag, idx) => (
+                        <span key={idx} className="bg-sky-500/10 text-sky-400 border border-sky-500/20 px-2 py-0.5 rounded text-xs">
+                          {tag}
+                        </span>
+                      ))}
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Eye className="w-3.5 h-3.5 text-slate-500" />
-                      <span className="text-sm text-slate-400">{(project.views / 1000).toFixed(1)}k</span>
+
+                    <div className="flex items-center gap-4 pt-3 border-t border-slate-700">
+                      <div className="flex items-center gap-1">
+                        <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
+                        <span className="text-sm text-slate-300">{project.rating || 0}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Eye className="w-3.5 h-3.5 text-slate-500" />
+                        <span className="text-sm text-slate-400">
+                          {project.view_count > 1000 
+                            ? `${(project.view_count / 1000).toFixed(1)}k` 
+                            : project.view_count || 0}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </div>

@@ -34,13 +34,16 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Get user's projects
-router.get('/user/my-projects', authMiddleware, async (req, res) => {
+// Get developer's projects (requires authentication as developer)
+router.get('/developer/my-projects', authMiddleware, async (req, res) => {
   try {
-    const projects = await ProjectModel.getByUserId(req.user.userId);
+    if (req.user.type !== 'developer') {
+      return res.status(403).json({ error: 'Only developers can access this endpoint' });
+    }
+    const projects = await ProjectModel.getByDeveloperId(req.user.userId);
     res.status(200).json(projects);
   } catch (error) {
-    console.error('Get user projects error:', error);
+    console.error('Get developer projects error:', error);
     res.status(500).json({ error: 'Failed to get projects' });
   }
 });

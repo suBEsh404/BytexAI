@@ -4,16 +4,15 @@ import { Camera, Calendar, Rocket, Star, Plus, Package, Bookmark, Search, Trash2
 import Navbar from '../components/Navbar'
 import { useAuth } from '../context/AuthContext'
 import { authService } from '../services/authService'
+import { getDeveloperProjects } from '../services/projectService'
 
 function ProfilePage() {
   const { user, updateUser, logout } = useAuth()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('overview')
-  
-  const mockProjects = [
-    { id: 1, title: 'AI Chatbot', category: 'NLP', rating: 4.5, reviews: 120 },
-    { id: 2, title: 'Image Classifier', category: 'Computer Vision', rating: 4.8, reviews: 85 }
-  ]
+  const [projects, setProjects] = useState([])
+  const [loadingProjects, setLoadingProjects] = useState(true)
+  const [projectError, setProjectError] = useState('')
   
   const mockBookmarks = [
     { id: 3, title: 'Voice Assistant', category: 'NLP', rating: 4.3, reviews: 95 },
@@ -25,6 +24,38 @@ function ProfilePage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    // Fetch real projects if user is a developer
+    const fetchProjects = async () => {
+      // Allow fetching if user type is 'developer' or undefined (backwards compatibility)
+      if (user && (user.type === 'developer' || !user.type)) {
+        try {
+          setLoadingProjects(true)
+          setProjectError('')
+          console.log('Fetching projects for user:', user)
+          const data = await getDeveloperProjects()
+          console.log('Projects fetched:', data)
+          setProjects(data)
+        } catch (err) {
+          console.error('Failed to fetch projects:', err)
+          const errorMsg = err.response?.data?.error || err.message || 'Failed to load projects'
+          
+          // If it's a 403 error and user type is undefined, suggest re-login
+          if (err.response?.status === 403 && !user.type) {
+            setProjectError('Please log out and log back in to update your account')
+          } else {
+            setProjectError(errorMsg)
+          }
+        } finally {
+          setLoadingProjects(false)
+        }
+      } else {
+        console.log('User is not a developer, skipping project fetch. User type:', user?.type)
+        setLoadingProjects(false)
+      }
+    }
+
+    fetchProjects()
+
     // Mock user for demo
     if (!user) {
       const mockUser = {
@@ -192,31 +223,48 @@ function ProfilePage() {
                   New Project
                 </Link>
               </div>
-              {mockProjects.length === 0 ? (
+              {loadingProjects ? (
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-12 border border-gray-300 dark:border-slate-700 shadow-sm text-center">
+                  <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <p className="text-gray-600 dark:text-gray-400">Loading projects...</p>
+                </div>
+              ) : projectError ? (
+                <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-12 border border-red-300 dark:border-red-800 shadow-sm text-center">
+                  <div className="text-red-500 text-4xl mb-4">⚠️</div>
+                  <p className="text-red-600 dark:text-red-400 mb-2 font-semibold">Failed to load projects</p>
+                  <p className="text-red-500 dark:text-red-500 text-sm">{projectError}</p>
+                  <button 
+                    onClick={() => window.location.reload()} 
+                    className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : projects.length === 0 ? (
                 <div className="bg-white dark:bg-slate-800 rounded-xl p-12 border border-gray-300 dark:border-slate-700 shadow-sm text-center">
                   <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-600 dark:text-gray-400 mb-4">No projects yet</p>
-                  <Link to="/developer/projects/new" className="inline-block px-6 py-3 bg-gradient-to-r from-primary to-accent text-white rounded-xl hover:shadow-lg transition hover:scale-105 transform flex items-center gap-2">
+                  <Link to="/developer/projects/new" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary to-accent text-white rounded-xl hover:shadow-lg transition hover:scale-105 transform">
                     <Rocket className="w-4 h-4" />
                     Submit Your First Project
                   </Link>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {mockProjects.map(project => (
+                  {projects.map(project => (
                     <div key={project.id} className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-gray-300 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-gray-400 dark:hover:border-primary/30 transition-all duration-300 hover:-translate-y-0.5">
                       <div className="flex justify-between items-start mb-4">
                         <div>
                           <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{project.title}</h4>
-                          <span className="px-3 py-1 bg-indigo-100 dark:bg-primary/20 text-indigo-600 dark:text-primary text-xs rounded-full font-medium">{project.category}</span>
+                          <span className="px-3 py-1 bg-indigo-100 dark:bg-primary/20 text-indigo-600 dark:text-primary text-xs rounded-full font-medium">{project.category || 'Uncategorized'}</span>
                         </div>
                         <button className="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 cursor-pointer">⋮</button>
                       </div>
                       <div className="flex items-center justify-between text-sm">
                         <div className="flex items-center space-x-2">
                           <span className="text-yellow-400">⭐</span>
-                          <span className="text-gray-900 dark:text-white font-medium">{project.rating}</span>
-                          <span className="text-gray-600 dark:text-gray-400">({project.reviews})</span>
+                          <span className="text-gray-900 dark:text-white font-medium">{project.rating || 0}</span>
+                          <span className="text-gray-600 dark:text-gray-400">({project.review_count || 0})</span>
                         </div>
                         <Link to={`/projects/${project.id}`} className="text-indigo-600 dark:text-accent hover:text-indigo-700 dark:hover:text-primary transition-colors duration-200">View →</Link>
                       </div>

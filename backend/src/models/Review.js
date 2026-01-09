@@ -2,10 +2,10 @@ import pool from '../config/database.js';
 
 export const ReviewModel = {
   // Create review
-  create: async (projectId, reviewerId, { rating, title, comment, developerId }) => {
+  create: async (projectId, userId, { rating, title, comment }) => {
     const result = await pool.query(
-      'INSERT INTO reviews (project_id, reviewer_id, developer_id, rating, title, comment) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [projectId, reviewerId, developerId, rating, title, comment]
+      'INSERT INTO reviews (project_id, user_id, rating, title, comment) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [projectId, userId, rating, title, comment]
     );
     return result.rows[0];
   },
@@ -13,8 +13,8 @@ export const ReviewModel = {
   // Get reviews by project
   getByProjectId: async (projectId) => {
     const result = await pool.query(
-      'SELECT r.*, u.username, u.profile_image_url FROM reviews r JOIN users u ON r.reviewer_id = u.id WHERE r.project_id = $1 AND r.status = $2 ORDER BY r.created_at DESC',
-      [projectId, 'approved']
+      'SELECT r.*, u.full_name, u.email FROM reviews r LEFT JOIN users u ON r.user_id = u.id WHERE r.project_id = $1 ORDER BY r.created_at DESC',
+      [projectId]
     );
     return result.rows;
   },
@@ -22,8 +22,8 @@ export const ReviewModel = {
   // Get reviews by developer
   getByDeveloperId: async (developerId) => {
     const result = await pool.query(
-      'SELECT r.*, u.username FROM reviews r JOIN users u ON r.reviewer_id = u.id WHERE r.developer_id = $1 AND r.status = $2 ORDER BY r.created_at DESC',
-      [developerId, 'approved']
+      'SELECT r.*, u.full_name FROM reviews r LEFT JOIN users u ON r.user_id = u.id WHERE r.project_id IN (SELECT id FROM projects WHERE developer_id = $1) ORDER BY r.created_at DESC',
+      [developerId]
     );
     return result.rows;
   },

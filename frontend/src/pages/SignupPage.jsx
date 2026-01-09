@@ -20,8 +20,13 @@ function SignupPage() {
     e.preventDefault()
     setLoading(true)
     try {
-      await signup(formData.name, formData.email, formData.password, formData.role)
-      navigate('/')
+      const data = await signup(formData.name, formData.email, formData.password, formData.role)
+      // Navigate based on role
+      if (data.user.role === 'developer') {
+        navigate('/developer/dashboard')
+      } else {
+        navigate('/')
+      }
     } catch (error) {
       setErrors({ submit: error.response?.data?.error || error.response?.data?.message || 'Signup failed' })
     } finally {

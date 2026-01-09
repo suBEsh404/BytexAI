@@ -1,3 +1,7 @@
+-- Fresh schema for BytexAI backend (PostgreSQL)
+-- Separated Users and Developers into independent tables
+
+-- Drop existing objects in dependency order
 DROP TABLE IF EXISTS bookmarks CASCADE;
 DROP TABLE IF EXISTS reviews CASCADE;
 DROP TABLE IF EXISTS projects CASCADE;
@@ -23,11 +27,10 @@ CREATE TABLE users (
     full_name VARCHAR(255) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     profile_image_url VARCHAR(500),
+    bio TEXT,
     location VARCHAR(255),
     is_active BOOLEAN DEFAULT TRUE,
-    is_verified BOOLEAN DEFAULT FALSE,
-    verification_token VARCHAR(255),
-    verification_token_expires TIMESTAMP,
+    is_verified BOOLEAN DEFAULT TRUE,
     reset_token VARCHAR(255),
     reset_token_expires TIMESTAMP,
     last_login TIMESTAMP,
@@ -42,10 +45,16 @@ CREATE TABLE developers (
     full_name VARCHAR(255) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     profile_image_url VARCHAR(500),
+    bio TEXT,
+    expertise VARCHAR(255),
+    years_of_experience INTEGER,
+    github_url VARCHAR(500),
+    portfolio_url VARCHAR(500),
+    linkedin_url VARCHAR(500),
+    hourly_rate DECIMAL(10, 2),
     is_active BOOLEAN DEFAULT TRUE,
-    is_verified BOOLEAN DEFAULT FALSE,
-    verification_token VARCHAR(255),
-    verification_token_expires TIMESTAMP,
+    is_verified BOOLEAN DEFAULT TRUE,
+    is_available BOOLEAN DEFAULT TRUE,
     reset_token VARCHAR(255),
     reset_token_expires TIMESTAMP,
     rating DECIMAL(3, 2) DEFAULT 0,
@@ -184,20 +193,6 @@ CREATE TABLE refresh_tokens (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- OAuth accounts (Google, GitHub, etc.)
-CREATE TABLE oauth_accounts (
-    id SERIAL PRIMARY KEY,
-    owner_type owner_type NOT NULL,
-    owner_id INTEGER NOT NULL,
-    provider VARCHAR(50) NOT NULL,
-    provider_account_id VARCHAR(255) NOT NULL,
-    access_token TEXT,
-    refresh_token TEXT,
-    expires_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (provider, provider_account_id)
-);
-
 -- Indexes for performance
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_developers_email ON developers(email);
@@ -208,4 +203,3 @@ CREATE INDEX idx_bookmarks_user_id ON bookmarks(user_id);
 CREATE INDEX idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX idx_notifications_developer_id ON notifications(developer_id);
 CREATE INDEX idx_refresh_tokens_owner ON refresh_tokens(owner_type, owner_id);
-CREATE INDEX idx_oauth_accounts_owner ON oauth_accounts(owner_type, owner_id);

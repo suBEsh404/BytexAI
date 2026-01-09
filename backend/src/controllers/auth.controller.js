@@ -1,6 +1,15 @@
 import { UserModel } from '../models/User.js';
+import { DeveloperModel } from '../models/Developer.js';
 import { hashPassword, comparePassword } from '../utils/password.js';
 import { generateToken } from '../utils/jwt.js';
+
+const findAccountByEmail = async (email) => {
+  const user = await UserModel.findByEmail(email);
+  if (user) return { account: user, accountType: 'user' };
+  const developer = await DeveloperModel.findByEmail(email);
+  if (developer) return { account: developer, accountType: 'developer' };
+  return { account: null, accountType: null };
+};
 
 export const authController = {
   // User signup
@@ -22,28 +31,33 @@ export const authController = {
         return res.status(400).json({ error: 'Invalid role', code: 'INVALID_ROLE' });
       }
 
-      // Check if user already exists
-      const existingUser = await UserModel.findByEmail(email);
-      if (existingUser) {
+      // Check if email already exists in either table
+      const existing = await findAccountByEmail(email);
+      if (existing.account) {
         return res.status(409).json({ error: 'Email already registered' });
       }
 
-      // Hash password and create user
+      // Hash password and create account in appropriate table
       const hashedPassword = await hashPassword(password);
-      const user = await UserModel.create(email, hashedPassword, fullName, normalizedRole);
+      let newAccount;
+      
+      if (normalizedRole === 'developer') {
+        newAccount = await DeveloperModel.create(email, hashedPassword, fullName);
+      } else {
+        newAccount = await UserModel.create(email, hashedPassword, fullName);
+      }
 
-      // Generate token
-      // Signup: short-lived token (10 minutes)
-      const token = generateToken(user.id, user.email, '10m');
+      // Generate token with role - signup always gets 7 days
+      const token = generateToken(newAccount.id, newAccount.email, '7d', normalizedRole);
 
       res.status(201).json({
-        message: 'User created successfully',
+        message: `${normalizedRole.charAt(0).toUpperCase() + normalizedRole.slice(1)} created successfully`,
         user: {
-          id: user.id,
-          email: user.email,
-          fullName: user.full_name,
-          role: user.role,
-          created_at: user.created_at
+          id: newAccount.id,
+          email: newAccount.email,
+          fullName: newAccount.full_name,
+          role: normalizedRole,
+          created_at: newAccount.created_at
         },
         token
       });
@@ -62,28 +76,29 @@ export const authController = {
         return res.status(400).json({ error: 'Email and password required' });
       }
 
-      const user = await UserModel.findByEmail(email);
-      if (!user) {
+      // Find account in either users or developers table
+      const { account, accountType } = await findAccountByEmail(email);
+      if (!account) {
         return res.status(401).json({ error: 'Email not registered', code: 'EMAIL_NOT_FOUND' });
       }
 
-      const isPasswordValid = await comparePassword(password, user.password_hash);
+      const isPasswordValid = await comparePassword(password, account.password_hash);
       if (!isPasswordValid) {
         return res.status(401).json({ error: 'Incorrect password', code: 'PASSWORD_INCORRECT' });
       }
 
       // Remember me => 7d, otherwise 10m
       const tokenTtl = rememberMe ? '7d' : '10m';
-      const token = generateToken(user.id, user.email, tokenTtl);
+      const token = generateToken(account.id, account.email, tokenTtl, accountType);
 
       res.status(200).json({
         message: 'Login successful',
         user: {
-          id: user.id,
-          email: user.email,
-          full_name: user.full_name,
-          role: user.role,
-          created_at: user.created_at
+          id: account.id,
+          email: account.email,
+          fullName: account.full_name,
+          role: accountType,
+          created_at: account.created_at
         },
         token
       });
@@ -97,22 +112,30 @@ export const authController = {
   getMe: async (req, res) => {
     try {
       const userId = req.user?.userId;
+      const userType = req.user?.type || 'user';
+
       if (!userId) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      const user = await UserModel.findById(userId);
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
+      let account;
+      if (userType === 'developer') {
+        account = await DeveloperModel.findById(userId);
+      } else {
+        account = await UserModel.findById(userId);
+      }
+
+      if (!account) {
+        return res.status(404).json({ error: 'Account not found' });
       }
 
       res.status(200).json({
         user: {
-          id: user.id,
-          email: user.email,
-          full_name: user.full_name,
-          role: user.role,
-          created_at: user.created_at
+          id: account.id,
+          email: account.email,
+          fullName: account.full_name,
+          role: userType,
+          created_at: account.created_at
         }
       });
     } catch (error) {

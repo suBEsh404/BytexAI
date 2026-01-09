@@ -12,18 +12,35 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const bootstrap = async () => {
       const token = localStorage.getItem('token')
+      const cachedUser = localStorage.getItem('user')
+      
       if (!token) {
         setLoading(false)
         return
       }
+      
+      // Use cached user data if available
+      if (cachedUser) {
+        try {
+          setUser(JSON.parse(cachedUser))
+        } catch (e) {
+          console.error('Failed to parse cached user:', e)
+        }
+      }
+      
       try {
         const user = await authService.getMe()
         setUser(user)
         localStorage.setItem('user', JSON.stringify(user))
       } catch (err) {
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
-        setUser(null)
+        console.error('Bootstrap error:', err)
+        // Only clear token if it's actually invalid (401)
+        if (err?.response?.status === 401) {
+          localStorage.removeItem('token')
+          localStorage.removeItem('user')
+          setUser(null)
+        }
+        // Otherwise keep the cached user data
       } finally {
         setLoading(false)
       }

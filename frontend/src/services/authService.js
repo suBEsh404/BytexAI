@@ -11,6 +11,7 @@ export const authService = {
     })
     const { token, user } = res.data
     const normalizedUser = { ...user, name: user.fullName || user.full_name || user.name }
+    localStorage.setItem("token", token)
     localStorage.setItem("user", JSON.stringify(normalizedUser))
     return { token, user: normalizedUser }
   },
@@ -19,6 +20,7 @@ export const authService = {
     const res = await API.post("/auth/login", { email, password, rememberMe })
     const { token, user } = res.data
     const normalizedUser = { ...user, name: user.fullName || user.full_name || user.name }
+    localStorage.setItem("token", token)
     localStorage.setItem("user", JSON.stringify(normalizedUser))
     return { token, user: normalizedUser }
   },

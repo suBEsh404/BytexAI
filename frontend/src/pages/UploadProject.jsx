@@ -63,7 +63,7 @@ const UploadProject = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = async (statusValue = 'active') => {
+  const handleSubmit = async (statusValue = 'live') => {
     if (loading) return;
     setError('');
     setLoading(true);
@@ -292,7 +292,7 @@ const UploadProject = () => {
             <button
               type="button"
               disabled={loading}
-              onClick={() => handleSubmit('active')}
+              onClick={() => handleSubmit('live')}
               className="flex-1 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white py-4 rounded-xl font-semibold shadow-lg shadow-indigo-500/25 transition flex items-center justify-center gap-2 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Upload className="w-5 h-5" />

@@ -83,7 +83,8 @@ router.post('/', authMiddleware, upload.single('thumbnail'), async (req, res) =>
       difficultyLevel: category || 'AI Tools',
       budget: null,
       category,
-      tags: parsedTags
+      tags: parsedTags,
+      status: status || 'draft'
     };
 
     const project = await ProjectModel.create(req.user.userId, projectData);

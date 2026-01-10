@@ -15,7 +15,7 @@ DROP TABLE IF EXISTS developers CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
 -- Enums
-CREATE TYPE project_status AS ENUM ('draft', 'active', 'completed', 'archived');
+CREATE TYPE project_status AS ENUM ('draft', 'active', 'live', 'completed', 'archived');
 CREATE TYPE review_status AS ENUM ('pending', 'approved', 'rejected');
 CREATE TYPE notification_type AS ENUM ('project_update', 'review_received', 'bookmark_update', 'system_notification');
 CREATE TYPE owner_type AS ENUM ('user', 'developer');

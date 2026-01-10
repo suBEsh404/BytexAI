@@ -312,7 +312,8 @@ function EditProjectPage() {
                   className="w-full px-4 py-3 bg-dark-bg/50 border border-dark-border rounded-xl text-white focus:ring-2 focus:ring-primary focus:border-primary outline-none transition"
                 >
                   <option value="draft">Draft</option>
-                  <option value="active">Active</option>
+                  <option value="live">Live</option>
+                  <option value="active">Live (Legacy)</option>
                 </select>
               </div>
             </div>

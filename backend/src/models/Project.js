@@ -2,14 +2,17 @@ import pool from '../config/database.js';
 
 export const ProjectModel = {
   // Create new project
-  create: async (developerId, { title, description, shortDescription, technologies, imageUrl, repositoryUrl, liveUrl, difficultyLevel, budget, category, tags }) => {
+  create: async (developerId, { title, description, shortDescription, technologies, imageUrl, repositoryUrl, liveUrl, difficultyLevel, budget, category, tags, status }) => {
     // Convert tags array to PostgreSQL array format if needed
     const tagsArray = Array.isArray(tags) ? tags : (tags ? tags.split(',').map(t => t.trim()) : []);
     const techArray = Array.isArray(technologies) ? technologies : (technologies ? technologies.split(',').map(t => t.trim()) : []);
     
+    // Normalize status: convert 'active' to 'live', default to 'draft'
+    const normalizedStatus = status === 'active' || status === 'live' ? 'live' : 'draft';
+    
     const result = await pool.query(
       'INSERT INTO projects (developer_id, title, description, tags, image_url, repository_url, live_url, category, budget, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
-      [developerId, title, description, tagsArray, imageUrl, repositoryUrl, liveUrl, category || difficultyLevel, budget, 'draft']
+      [developerId, title, description, tagsArray, imageUrl, repositoryUrl, liveUrl, category || difficultyLevel, budget, normalizedStatus]
     );
     return result.rows[0];
   },

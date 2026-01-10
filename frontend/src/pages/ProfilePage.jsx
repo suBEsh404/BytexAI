@@ -252,13 +252,22 @@ function ProfilePage() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {projects.map(project => (
-                    <div key={project.id} className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-gray-300 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-gray-400 dark:hover:border-primary/30 transition-all duration-300 hover:-translate-y-0.5">
+                    <div key={project.id} className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-gray-300 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-gray-400 dark:hover:border-primary/30 transition-all duration-300 hover:-translate-y-0.5 relative">
+                      {/* Status badge on top right */}
+                      <div className="absolute top-4 right-4">
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          project.status === 'draft' 
+                            ? 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600' 
+                            : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 border border-green-300 dark:border-green-600'
+                        }`}>
+                          {project.status === 'draft' ? 'Draft' : 'Live'}
+                        </span>
+                      </div>
                       <div className="flex justify-between items-start mb-4">
-                        <div>
+                        <div className="pr-16">
                           <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{project.title}</h4>
                           <span className="px-3 py-1 bg-indigo-100 dark:bg-primary/20 text-indigo-600 dark:text-primary text-xs rounded-full font-medium">{project.category || 'Uncategorized'}</span>
                         </div>
-                        <button className="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 cursor-pointer">⋮</button>
                       </div>
                       <div className="flex items-center justify-between text-sm">
                         <div className="flex items-center space-x-2">

@@ -38,11 +38,36 @@ export default function ProjectDetailPage() {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [distribution, setDistribution] = useState([0, 0, 0, 0, 0]);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   // review form
   const [ratingValue, setRatingValue] = useState(5);
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Make project live
+  const handleMakeProjectLive = async () => {
+    if (!user || project.status === 'live') return;
+    
+    if (!window.confirm('Are you sure you want to make this project live?')) {
+      return;
+    }
+
+    setUpdatingStatus(true);
+    try {
+      const API = (await import('../api/api')).default;
+      await API.put(`/projects/${id}`, { status: 'live' });
+      
+      // Update local state
+      setProject(prev => ({ ...prev, status: 'live' }));
+      alert('Project is now live!');
+    } catch (error) {
+      console.error('Failed to update project status:', error);
+      alert('Failed to update project status. Please try again.');
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
 
   // load project + reviews
   useEffect(() => {
@@ -348,15 +373,37 @@ export default function ProjectDetailPage() {
               </div>
 
               {/* short meta row */}
-              <div style={{ marginTop: 16, display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <div style={{ marginTop: 16, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
                 <div style={{ background: "rgba(255,255,255,0.02)", padding: "8px 12px", borderRadius: 10 }}>
                   <div className="small text-muted">Created</div>
                   <div style={{ fontWeight: 800 }}>{new Date(project.created_at || Date.now()).toLocaleDateString()}</div>
                 </div>
 
-                <div style={{ background: "rgba(255,255,255,0.02)", padding: "8px 12px", borderRadius: 10 }}>
-                  <div className="small text-muted">Status</div>
-                  <div style={{ fontWeight: 800 }}>{project.status || "Published"}</div>
+                <div style={{ background: "rgba(255,255,255,0.02)", padding: "8px 12px", borderRadius: 10, display: "flex", alignItems: "center", gap: 8 }}>
+                  <div>
+                    <div className="small text-muted">Status</div>
+                    <div style={{ fontWeight: 800 }}>
+                      {project.status === 'draft' ? 'Draft' : project.status === 'active' || project.status === 'live' ? 'Live' : 'Published'}
+                    </div>
+                  </div>
+                  {project.status === 'draft' && user && (
+                    <button
+                      onClick={handleMakeProjectLive}
+                      disabled={updatingStatus}
+                      className="btn btn-primary"
+                      style={{ 
+                        padding: "6px 12px", 
+                        fontSize: "12px",
+                        cursor: "pointer",
+                        opacity: updatingStatus ? 0.6 : 1,
+                        marginLeft: 8,
+                        whiteSpace: "nowrap"
+                      }}
+                    >
+                      <Rocket size={14} style={{ marginRight: 4 }} />
+                      {updatingStatus ? 'Updating...' : 'Make Live'}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

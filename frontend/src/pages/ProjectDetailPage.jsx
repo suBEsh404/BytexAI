@@ -1,7 +1,7 @@
 // src/pages/ProjectDetailPage.jsx
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeftRight, Rocket, Bookmark, PenTool, Link, Target, Clipboard, Check, X, BarChart3, Lightbulb, Star } from "lucide-react";
+import { ArrowLeftRight, Rocket, Bookmark, PenTool, Link, Target, Clipboard, Check, X, BarChart3, Lightbulb, Star, Archive } from "lucide-react";
 import RatingStars from "../components/RatingStars";
 import { getProject, getProjectReviews, toggleBookmark } from "../services/projectService";
 import { useAuth } from "../context/AuthContext";
@@ -64,6 +64,30 @@ export default function ProjectDetailPage() {
     } catch (error) {
       console.error('Failed to update project status:', error);
       alert('Failed to update project status. Please try again.');
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
+  // Archive project
+  const handleArchiveProject = async () => {
+    if (!user || project.status === 'archived') return;
+    
+    if (!window.confirm('Are you sure you want to archive this project? It will no longer be publicly visible.')) {
+      return;
+    }
+
+    setUpdatingStatus(true);
+    try {
+      const API = (await import('../api/api')).default;
+      await API.put(`/projects/${id}`, { status: 'archived' });
+      
+      // Update local state
+      setProject(prev => ({ ...prev, status: 'archived' }));
+      alert('Project has been archived.');
+    } catch (error) {
+      console.error('Failed to archive project:', error);
+      alert('Failed to archive project. Please try again.');
     } finally {
       setUpdatingStatus(false);
     }
@@ -383,10 +407,46 @@ export default function ProjectDetailPage() {
                   <div>
                     <div className="small text-muted">Status</div>
                     <div style={{ fontWeight: 800 }}>
-                      {project.status === 'draft' ? 'Draft' : project.status === 'active' || project.status === 'live' ? 'Live' : 'Published'}
+                      {project.status === 'draft' ? 'Draft' : project.status === 'active' || project.status === 'live' ? 'Live' : project.status === 'archived' ? 'Archived' : 'Published'}
                     </div>
                   </div>
-                  {project.status === 'draft' && user && (
+                  {project.status === 'draft' && user && user.role === 'developer' && (
+                    <button
+                      onClick={handleMakeProjectLive}
+                      disabled={updatingStatus}
+                      className="btn btn-primary"
+                      style={{ 
+                        padding: "6px 12px", 
+                        fontSize: "12px",
+                        cursor: "pointer",
+                        opacity: updatingStatus ? 0.6 : 1,
+                        marginLeft: 8,
+                        whiteSpace: "nowrap"
+                      }}
+                    >
+                      <Rocket size={14} style={{ marginRight: 4 }} />
+                      {updatingStatus ? 'Updating...' : 'Make Live'}
+                    </button>
+                  )}
+                  {(project.status === 'live' || project.status === 'active') && user && user.role === 'developer' && (
+                    <button
+                      onClick={handleArchiveProject}
+                      disabled={updatingStatus}
+                      className="btn btn-outline"
+                      style={{ 
+                        padding: "6px 12px", 
+                        fontSize: "12px",
+                        cursor: "pointer",
+                        opacity: updatingStatus ? 0.6 : 1,
+                        marginLeft: 8,
+                        whiteSpace: "nowrap"
+                      }}
+                    >
+                      <Archive size={14} style={{ marginRight: 4 }} />
+                      {updatingStatus ? 'Archiving...' : 'Archive'}
+                    </button>
+                  )}
+                  {project.status === 'archived' && user && user.role === 'developer' && (
                     <button
                       onClick={handleMakeProjectLive}
                       disabled={updatingStatus}
@@ -447,7 +507,19 @@ export default function ProjectDetailPage() {
               )}
 
               <div style={{ marginTop: 14, display: "flex", gap: 8 }}>
-                <a className="btn btn-primary" href={project.project_url || "#"} target="_blank" rel="noreferrer" style={{ cursor: "pointer" }}>
+                <a 
+                  className="btn btn-primary" 
+                  href={project.live_url || project.project_url || "#"} 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  style={{ cursor: project.live_url || project.project_url ? "pointer" : "not-allowed", opacity: project.live_url || project.project_url ? 1 : 0.5 }}
+                  onClick={(e) => {
+                    if (!project.live_url && !project.project_url) {
+                      e.preventDefault();
+                      alert('No demo URL available for this project');
+                    }
+                  }}
+                >
                   <Target size={16} aria-label="Try Demo" /> Try Demo
                 </a>
                 <button className="btn btn-outline" onClick={() => {navigator.clipboard?.writeText(window.location.href); alert('Link copied!')}} style={{ cursor: "pointer" }}>

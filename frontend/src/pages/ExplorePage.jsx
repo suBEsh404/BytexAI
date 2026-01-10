@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter, Star, Eye, TrendingUp, Grid, List, X } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
 import Footer from '../components/Footer';
+import { getAllProjects } from '../services/projectService';
 
 const ExplorePage = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -10,6 +11,27 @@ const ExplorePage = () => {
   const [sortBy, setSortBy] = useState('trending');
   const [viewMode, setViewMode] = useState('grid');
   const [showFilters, setShowFilters] = useState(true);
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        const data = await getAllProjects(100, 0); // Fetch up to 100 projects
+        setProjects(data);
+      } catch (err) {
+        console.error('Failed to fetch projects:', err);
+        setError('Failed to load projects. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjects();
+  }, []);
 
   const categories = [
     { id: 'all', name: 'All Projects', count: 245 },
@@ -22,86 +44,50 @@ const ExplorePage = () => {
 
   const tags = ['AI', 'Machine Learning', 'Automation', 'Generator', 'Editor', 'Analytics', 'Optimizer', 'Design'];
 
-  const projects = [
-    {
-      id: 1,
-      title: 'AI Content Generator',
-      description: 'Generate high-quality content with AI-powered algorithms. Perfect for marketers and writers.',
-      thumbnail: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&h=300&fit=crop',
-      category: 'AI Tools',
-      rating: 4.8,
-      reviews: 234,
-      views: 12400,
-      tags: ['AI', 'Generator'],
-      trending: true
-    },
-    {
-      id: 2,
-      title: 'Image Enhancer Pro',
-      description: 'Enhance and upscale images using machine learning. Restore old photos in seconds.',
-      thumbnail: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=400&h=300&fit=crop',
-      category: 'Image Processing',
-      rating: 4.6,
-      reviews: 189,
-      views: 8900,
-      tags: ['AI', 'Editor'],
-      trending: false
-    },
-    {
-      id: 3,
-      title: 'Data Visualizer',
-      description: 'Create stunning data visualizations in seconds. Export to PNG, SVG, and more.',
-      thumbnail: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop',
-      category: 'Data Analysis',
-      rating: 4.9,
-      reviews: 412,
-      views: 15600,
-      tags: ['Analytics'],
-      trending: true
-    },
-    {
-      id: 4,
-      title: 'Code Optimizer AI',
-      description: 'Optimize and refactor your code automatically. Supports JS, Python, and Rust.',
-      thumbnail: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&h=300&fit=crop',
-      category: 'Productivity',
-      rating: 4.7,
-      reviews: 156,
-      views: 7200,
-      tags: ['AI', 'Optimizer'],
-      trending: false
-    },
-    {
-      id: 5,
-      title: 'Smart Scheduler',
-      description: 'AI-powered scheduling and calendar management. Never miss a meeting again.',
-      thumbnail: 'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=400&h=300&fit=crop',
-      category: 'Productivity',
-      rating: 4.5,
-      reviews: 98,
-      views: 5400,
-      tags: ['AI', 'Automation'],
-      trending: false
-    },
-    {
-      id: 6,
-      title: 'Voice Synthesizer',
-      description: 'Convert text to natural-sounding speech. Multiple languages and accents supported.',
-      thumbnail: 'https://images.unsplash.com/photo-1589254065878-42c9da997008?w=400&h=300&fit=crop',
-      category: 'AI Tools',
-      rating: 4.8,
-      reviews: 267,
-      views: 11200,
-      tags: ['AI', 'Generator'],
-      trending: true
-    }
-  ];
-
   const toggleTag = (tag) => {
     setSelectedTags(prev => 
       prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
     );
   };
+
+  // Filter and sort projects
+  const filteredProjects = projects
+    .filter(project => {
+      // Filter by search query
+      if (searchQuery && !project.title.toLowerCase().includes(searchQuery.toLowerCase()) && 
+          !project.description?.toLowerCase().includes(searchQuery.toLowerCase())) {
+        return false;
+      }
+
+      // Filter by category
+      if (selectedCategory !== 'all' && project.category?.toLowerCase() !== selectedCategory.toLowerCase().replace('-', ' ')) {
+        return false;
+      }
+
+      // Filter by tags
+      if (selectedTags.length > 0 && project.tags) {
+        const projectTags = Array.isArray(project.tags) ? project.tags : [];
+        const hasMatchingTag = selectedTags.some(tag => 
+          projectTags.some(pt => pt.toLowerCase().includes(tag.toLowerCase()))
+        );
+        if (!hasMatchingTag) return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'newest':
+          return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+        case 'rating':
+          return (b.rating || 0) - (a.rating || 0);
+        case 'views':
+          return (b.view_count || 0) - (a.view_count || 0);
+        case 'trending':
+        default:
+          return (b.view_count || 0) - (a.view_count || 0);
+      }
+    });
 
   return (
     <PageLayout className="min-h-screen bg-blue-50 dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-800 text-gray-900 dark:text-gray-200">
@@ -234,20 +220,46 @@ const ExplorePage = () => {
             </div>
 
             <div className="mb-4 text-gray-600 dark:text-gray-400 text-sm">
-              Showing {projects.length} projects
+              {loading ? 'Loading projects...' : error ? error : `Showing ${filteredProjects.length} projects`}
             </div>
 
+            {loading ? (
+              <div className="flex justify-center items-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
+              </div>
+            ) : error ? (
+              <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-8 text-center">
+                <p className="text-red-600 dark:text-red-400">{error}</p>
+              </div>
+            ) : filteredProjects.length === 0 ? (
+              <div className="bg-gray-50 dark:bg-slate-700 rounded-xl p-12 text-center">
+                <p className="text-gray-600 dark:text-gray-400 mb-4">No projects found matching your criteria.</p>
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedCategory('all');
+                    setSelectedTags([]);
+                  }}
+                  className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            ) : (
             <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6' : 'space-y-4'}>
-              {projects.map(project => (
+              {filteredProjects.map(project => (
                 <div key={project.id} onClick={() => window.location.href = `/projects/${project.id}`} className={`bg-white dark:bg-slate-800 rounded-2xl border border-blue-200 dark:border-slate-700 overflow-hidden hover:border-indigo-500/50 transition duration-300 group cursor-pointer hover:shadow-xl hover:shadow-blue-500/10 dark:hover:shadow-black/30 ${viewMode === 'list' ? 'flex flex-row h-48' : ''}`}>
                   <div className={`relative overflow-hidden ${viewMode === 'list' ? 'w-64 h-full' : 'h-48'}`}>
                     <img 
-                      src={project.thumbnail} 
+                      src={project.image_url || 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&h=300&fit=crop'} 
                       alt={project.title}
                       className="w-full h-full object-cover group-hover:scale-110 transition duration-500"
+                      onError={(e) => {
+                        e.target.src = 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&h=300&fit=crop';
+                      }}
                     />
                     <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition"></div>
-                    {project.trending && (
+                    {(project.view_count > 1000 || project.rating > 4.5) && (
                       <div className="absolute top-3 right-3 bg-gradient-to-r from-orange-500 to-pink-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg shadow-orange-500/20">
                         <TrendingUp className="w-3 h-3" />
                         Trending
@@ -264,8 +276,8 @@ const ExplorePage = () => {
                       <p className="text-gray-600 dark:text-slate-400 text-sm mb-4 line-clamp-2 leading-relaxed">{project.description}</p>
 
                       <div className="flex flex-wrap gap-2 mb-4">
-                        {project.tags.slice(0, 3).map(tag => (
-                          <span key={tag} className="bg-sky-500/10 text-sky-400 border border-sky-500/20 px-2 py-1 rounded text-xs font-medium">
+                        {(Array.isArray(project.tags) ? project.tags : []).slice(0, 3).map((tag, idx) => (
+                          <span key={idx} className="bg-sky-500/10 text-sky-400 border border-sky-500/20 px-2 py-1 rounded text-xs font-medium">
                             {tag}
                           </span>
                         ))}
@@ -275,6 +287,7 @@ const ExplorePage = () => {
                 </div>
               ))}
             </div>
+            )}
           </main>
           </div>
         </div>

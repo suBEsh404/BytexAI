@@ -185,7 +185,9 @@ function ProfilePage() {
                 <div className="bg-gray-50 dark:bg-slate-700 rounded-xl p-6 border border-gray-200 dark:border-slate-600 hover:shadow-md hover:border-gray-300 dark:hover:border-slate-500 hover:-translate-y-0.5 transition-all duration-200">
                   <Rocket className="w-8 h-8 text-orange-500 mb-2" />
                   <div className="text-gray-600 dark:text-gray-400 text-sm mb-1">Projects</div>
-                  <div className="text-gray-900 dark:text-white font-semibold">0</div>
+                  <div className="text-gray-900 dark:text-white font-semibold">
+                    {loadingProjects ? '...' : projects.length}
+                  </div>
                 </div>
                 <div className="bg-gray-50 dark:bg-slate-700 rounded-xl p-6 border border-gray-200 dark:border-slate-600 hover:shadow-md hover:border-gray-300 dark:hover:border-slate-500 hover:-translate-y-0.5 transition-all duration-200">
                   <Star className="w-8 h-8 text-yellow-400 mb-2" />
@@ -258,9 +260,11 @@ function ProfilePage() {
                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                           project.status === 'draft' 
                             ? 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600' 
+                            : project.status === 'archived'
+                            ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600'
                             : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 border border-green-300 dark:border-green-600'
                         }`}>
-                          {project.status === 'draft' ? 'Draft' : 'Live'}
+                          {project.status === 'draft' ? 'Draft' : project.status === 'archived' ? 'Archived' : 'Live'}
                         </span>
                       </div>
                       <div className="flex justify-between items-start mb-4">

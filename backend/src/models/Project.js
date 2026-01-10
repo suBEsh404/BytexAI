@@ -21,7 +21,7 @@ export const ProjectModel = {
   getAll: async (limit = 10, offset = 0) => {
     const result = await pool.query(
       'SELECT p.*, d.full_name as developer_name, d.email FROM projects p JOIN developers d ON p.developer_id = d.id WHERE p.status = $1 ORDER BY p.created_at DESC LIMIT $2 OFFSET $3',
-      ['published', limit, offset]
+      ['live', limit, offset]
     );
     return result.rows;
   },
